@@ -15,14 +15,14 @@
         button { background-color: #0284c7; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background-color: #0369a1; }
         button:disabled { background-color: #64748b; cursor: not-allowed; }
-        #progreso { margin-top: 15px; font-weight: bold; color: #38bdf8; white-space: pre-line; }
+        #progreso { margin-top: 15px; font-weight: bold; color: #38bdf8; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Policía de Entre Ríos</h2>
-    <p>Carga masiva de fotos y capturas (Soporta JPG, PNG y más)</p>
+    <p>Carga de registros fotográficos por Departamental</p>
     
     <select id="departamental" required>
         <option value="" disabled selected>--- Seleccione Jefatura Departamental ---</option>
@@ -46,14 +46,14 @@
     </select>
 
     <input type="text" id="oficial" placeholder="Nombre del Oficial / Datos adicionales (Opcional)">
-    <!-- Filtro amplio para capturar imágenes del celular sin trabas -->
     <input type="file" id="fotos" accept="image/*" multiple required>
     <button id="btnEnviar" onclick="subirImagenes()">Enviar Fotografías</button>
     <div id="progreso"></div>
 </div>
 
 <script>
-const URL_GOOGLE = "https://google.com";
+// REEMPLAZA EL TEXTO DE ABAJO ENTRE COMILLAS CON LA URL QUE COPIASTE DE GOOGLE EN LA FASE 1
+const URL_GOOGLE = "AQUÍ_PEGA_LA_URL_DE_TU_SCRIPT_DE_GOOGLE";
 
 async function subirImagenes() {
     const selectorDept = document.getElementById('departamental').value;
@@ -68,97 +68,43 @@ async function subirImagenes() {
     }
     
     btn.disabled = true;
-    divProgreso.innerHTML = "Iniciando procesamiento...";
-    let subidosConExito = 0;
     
     for(let i = 0; i < inputFotos.length; i++) {
         const foto = inputFotos[i];
-        divProgreso.innerHTML = `Procesando y convirtiendo foto ${i + 1} de ${inputFotos.length}...`;
+        divProgreso.innerHTML = `Subiendo foto ${i + 1} de ${inputFotos.length}...`;
+        
+        const base64 = await convertirBase64(foto);
+        const oficialLimpio = datosOficial.replace(/[^a-zA-Z0-9]/g, "_");
+        
+        const payload = {
+            departamental: selectorDept,
+            nombre: `${oficialLimpio}_${Date.now()}_${foto.name}`,
+            tipo: foto.type,
+            archivo: base64
+        };
         
         try {
-            const rawBase64 = await comprimirYConvertirA_JPG(foto);
-            
-            // Extrae estrictamente la cadena base64 limpia
-            const partes = rawBase64.split(',');
-            const base64Limpio = partes.length > 1 ? partes[1] : partes[0];
-            
-            const oficialLimpio = datosOficial.replace(/[^a-zA-Z0-9]/g, "_");
-            
-            const payload = {
-                departamental: selectorDept,
-                // Forzamos que guarde el archivo final con extensión .jpg
-                nombre: `${oficialLimpio}_${Date.now()}_${foto.name.replace(/\.[^/.]+$/, "")}.jpg`,
-                tipo: "image/jpeg",
-                archivo: base64Limpio
-            };
-            
-            const respuesta = await fetch(URL_GOOGLE, {
+            await fetch(URL_GOOGLE, {
                 method: "POST",
                 body: JSON.stringify(payload)
             });
-            
-            const resultadoJson = await respuesta.json();
-            
-            if (resultadoJson.status === "OK") {
-                subidosConExito++;
-            } else {
-                alert(`Error en foto ${foto.name}: ${resultadoJson.error}`);
-            }
         } catch (error) {
-            alert(`Error procesando archivo ${foto.name}: ${error.message}`);
+            console.error("Error enviando: " + foto.name, error);
         }
     }
     
-    divProgreso.innerHTML = `¡Proceso Finalizado!\nSe guardaron con éxito ${subidosConExito} de ${inputFotos.length} imágenes en Drive.`;
+    divProgreso.innerHTML = `¡Éxito! Se guardaron ${inputFotos.length} fotos en la carpeta de Jefatura ${selectorDept}.`;
     btn.disabled = false;
     document.getElementById('fotos').value = "";
     document.getElementById('oficial').value = "";
 }
 
-// Esta función transforma CUALQUIER imagen (incluyendo PNG) en un JPG optimizado y liviano
-function comprimirYConvertirA_JPG(file) {
+function convertirBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = event => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200; // Reducimos un poco más para garantizar subida ultra rápida
-                const MAX_HEIGHT = 1200;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                
-                const ctx = canvas.getContext('2d');
-                
-                // Fondo blanco obligatorio para evitar que los PNG con transparencia se vuelvan negros
-                ctx.fillStyle = "#FFFFFF";
-                ctx.fillRect(0, 0, width, height);
-                
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Forzar salida en JPEG compacto (0.6 calidad) para optimizar el rendimiento de la red policial
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                resolve(dataUrl);
-            };
-            img.onerror = () => reject(new Error("No se pudo procesar el gráfico de la imagen."));
-        };
-        reader.onerror = () => reject(new Error("Error leyendo el archivo."));
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
     });
 }
 </script>
