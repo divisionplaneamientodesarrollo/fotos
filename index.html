@@ -22,7 +22,8 @@
 
 <div class="container">
     <h2>Policía de Entre Ríos</h2>
-    <p>Carga de registros fotográficos por Departamental v1.1 - JPG Compress</p>
+    <p>Carga de registros fotográficos por Departamental</p>
+    <p>App v1.2 - Compresion JPG 1080p 70%</p>
     
     <select id="departamental" required>
         <option value="" disabled selected>--- Seleccione Jefatura Departamental ---</option>
@@ -111,21 +112,20 @@ function comprimirYConvertir(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1920;
-                const MAX_HEIGHT = 1080;
+                const LONG_EDGE = 1920; // borde largo fijo
                 let width = img.width;
                 let height = img.height;
 
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
+                if (width >= height) {
+                    // Foto horizontal → ancho = 1920
+                    const ratio = LONG_EDGE / width;
+                    width = LONG_EDGE;
+                    height = Math.round(height * ratio);
                 } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
+                    // Foto vertical → alto = 1920
+                    const ratio = LONG_EDGE / height;
+                    height = LONG_EDGE;
+                    width = Math.round(width * ratio);
                 }
 
                 canvas.width = width;
@@ -133,13 +133,15 @@ function comprimirYConvertir(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // calidad 70%
+                // Convertir a JPG calidad 70%
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 resolve(dataUrl);
             };
         };
         reader.onerror = error => reject(error);
     });
 }
+// FIN DE - Función que redimensiona y convierte a JPG 1920x1080 calidad 70%
 </script>
 </body>
 </html>
