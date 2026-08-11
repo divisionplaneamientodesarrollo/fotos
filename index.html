@@ -52,8 +52,7 @@
 </div>
 
 <script>
-// REEMPLAZA EL TEXTO DE ABAJO ENTRE COMILLAS CON LA URL QUE COPIASTE DE GOOGLE EN LA FASE 1
-const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyTZF0memgEuakS7SbdPZXWlh-lXA0jK1ohwoFwDqWpYeKXDdogDPvf4P_j73rGGrVHkA/exec";
+const URL_GOOGLE = "https://google.com";
 
 async function subirImagenes() {
     const selectorDept = document.getElementById('departamental').value;
@@ -95,8 +94,8 @@ async function subirImagenes() {
     
     divProgreso.innerHTML = `¡Éxito! Se guardaron ${inputFotos.length} fotos en la carpeta de Jefatura ${selectorDept}.`;
     btn.disabled = false;
-    document.getElementById('fotos').value = "";
-    document.getElementById('oficial').value = "";
+    document.getElementById('fotos').value = ""; // Limpiar fotos
+    document.getElementById('oficial').value = ""; // Limpiar campo oficial
 }
 
 function convertirBase64(file) {
@@ -108,5 +107,6 @@ function convertirBase64(file) {
     });
 }
 </script>
+
 </body>
 </html>
