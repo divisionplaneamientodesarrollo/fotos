@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envío de Fotos - Policía de Entre Ríos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #0f172a; text-align: center; color: #f8fafc; }
+        .container { max-width: 500px; margin: auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h2 { color: #38bdf8; margin-bottom: 5px; }
+        p { color: #94a3b8; font-size: 14px; }
+        select, input, button { width: 100%; padding: 15px; margin: 12px 0; box-sizing: border-box; border-radius: 6px; border: 1px solid #475569; font-size: 16px; background: #334155; color: white; }
+        select { cursor: pointer; }
+        input[type="file"] { background: #475569; cursor: pointer; }
+        button { background-color: #0284c7; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background-color: #0369a1; }
+        button:disabled { background-color: #64748b; cursor: not-allowed; }
+        #progreso { margin-top: 15px; font-weight: bold; color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Policía de Entre Ríos</h2>
+    <p>Carga de registros fotográficos por Departamental</p>
+    
+    <select id="departamental" required>
+        <option value="" disabled selected>--- Seleccione Jefatura Departamental ---</option>
+        <option value="Colón">Jefatura Departamental Colón</option>
+        <option value="Concordia">Jefatura Departamental Concordia</option>
+        <option value="Diamante">Jefatura Departamental Diamante</option>
+        <option value="Federación">Jefatura Departamental Federación</option>
+        <option value="Federal">Jefatura Departamental Federal</option>
+        <option value="Feliciano">Jefatura Departamental Feliciano</option>
+        <option value="Gualeguay">Jefatura Departamental Gualeguay</option>
+        <option value="Gualeguaychú">Jefatura Departamental Gualeguaychú</option>
+        <option value="Islas del Ibicuy">Jefatura Departamental Islas del Ibicuy</option>
+        <option value="La Paz">Jefatura Departamental La Paz</option>
+        <option value="Nogoyá">Jefatura Departamental Nogoyá</option>
+        <option value="Paraná">Jefatura Departamental Paraná</option>
+        <option value="San Salvador">Jefatura Departamental San Salvador</option>
+        <option value="Tala">Jefatura Departamental Tala</option>
+        <option value="Uruguay">Jefatura Departamental Uruguay</option>
+        <option value="Victoria">Jefatura Departamental Victoria</option>
+        <option value="Villaguay">Jefatura Departamental Villaguay</option>
+    </select>
+
+    <input type="text" id="oficial" placeholder="Nombre del Oficial / Datos adicionales (Opcional)">
+    <input type="file" id="fotos" accept="image/*" multiple required>
+    <button id="btnEnviar" onclick="subirImagenes()">Enviar Fotografías</button>
+    <div id="progreso"></div>
+</div>
+
+<script>
+// REEMPLAZA EL TEXTO DE ABAJO ENTRE COMILLAS CON LA URL QUE COPIASTE DE GOOGLE EN LA FASE 1
+const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyTZF0memgEuakS7SbdPZXWlh-lXA0jK1ohwoFwDqWpYeKXDdogDPvf4P_j73rGGrVHkA/exec";
+
+async function subirImagenes() {
+    const selectorDept = document.getElementById('departamental').value;
+    const datosOficial = document.getElementById('oficial').value || "Sin_Nombre";
+    const inputFotos = document.getElementById('fotos').files;
+    const btn = document.getElementById('btnEnviar');
+    const divProgreso = document.getElementById('progreso');
+    
+    if(!selectorDept || inputFotos.length === 0) {
+        alert("Por favor, seleccione la Jefatura Departamental y al menos una foto.");
+        return;
+    }
+    
+    btn.disabled = true;
+    
+    for(let i = 0; i < inputFotos.length; i++) {
+        const foto = inputFotos[i];
+        divProgreso.innerHTML = `Subiendo foto ${i + 1} de ${inputFotos.length}...`;
+        
+        const base64 = await convertirBase64(foto);
+        const oficialLimpio = datosOficial.replace(/[^a-zA-Z0-9]/g, "_");
+        
+        const payload = {
+            departamental: selectorDept,
+            nombre: `${oficialLimpio}_${Date.now()}_${foto.name}`,
+            tipo: foto.type,
+            archivo: base64
+        };
+        
+        try {
+            await fetch(URL_GOOGLE, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        } catch (error) {
+            console.error("Error enviando: " + foto.name, error);
+        }
+    }
+    
+    divProgreso.innerHTML = `¡Éxito! Se guardaron ${inputFotos.length} fotos en la carpeta de Jefatura ${selectorDept}.`;
+    btn.disabled = false;
+    document.getElementById('fotos').value = "";
+    document.getElementById('oficial').value = "";
+}
+
+function convertirBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+</script>
+</body>
+</html>
