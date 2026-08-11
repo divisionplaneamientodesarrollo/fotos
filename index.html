@@ -23,7 +23,7 @@
 <div class="container">
     <h2>Policía de Entre Ríos</h2>
     <p>Carga de registros fotográficos por Departamental</p>
-    <p>App v1.4.1 - Compresión JPG borde largo 1920px calidad 70%</p>
+    <p>App v1.02.11082026_2000 - Compresión JPG borde largo 1920px calidad 70%</p>
     
     <select id="departamental" required>
         <option value="" disabled selected>--- Seleccione Jefatura Departamental ---</option>
@@ -49,6 +49,8 @@
     <input type="text" id="oficial" placeholder="Nombre del Funcionario">
     <input type="file" id="fotos" accept="image/*" multiple required>
     <button id="btnEnviar" onclick="subirImagenes()">Enviar Fotografías</button>
+    <p>DGOySP - Div. Planeamiento y Desarrollo</p>
+    <p>divisionplaneamientodesarrollo@gmail.com</p>
     <div id="progreso"></div>
 </div>
 
@@ -145,10 +147,13 @@ function generarTimestamp() {
     const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
     const hoy = new Date();
     const yyyy = hoy.getFullYear();
-    const mm = String(hoy.getMonth() + 1).padStart(2, '0');
     const dd = String(hoy.getDate()).padStart(2, '0');
     const mesTexto = meses[hoy.getMonth()];
-    return `${yyyy}-${mm}-${dd} (${yyyy}-${mesTexto}-${dd})`;
+    
+    const hh = String(hoy.getHours()).padStart(2, '0');
+    const mm = String(hoy.getMinutes()).padStart(2, '0');
+    
+    return `${yyyy}-${mesTexto}-${dd}_${hh}${mm}`;
 }
 </script>
 </body>
