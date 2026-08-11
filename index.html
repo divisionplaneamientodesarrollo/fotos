@@ -22,7 +22,7 @@
 
 <div class="container">
     <h2>Policía de Entre Ríos</h2>
-    <p>Carga de registros fotográficos por Departamental v1.0</p>
+    <p>Carga de registros fotográficos por Departamental v1.1 - JPG Compress</p>
     
     <select id="departamental" required>
         <option value="" disabled selected>--- Seleccione Jefatura Departamental ---</option>
@@ -52,7 +52,8 @@
 </div>
 
 <script>
-const URL_GOOGLE = "https://google.com";
+// REEMPLAZA ESTA URL CON LA DE TU WEB APP DE GOOGLE
+const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyTZF0memgEuakS7SbdPZXWlh-lXA0jK1ohwoFwDqWpYeKXDdogDPvf4P_j73rGGrVHkA/exec";
 
 async function subirImagenes() {
     const selectorDept = document.getElementById('departamental').value;
@@ -70,23 +71,25 @@ async function subirImagenes() {
     
     for(let i = 0; i < inputFotos.length; i++) {
         const foto = inputFotos[i];
-        divProgreso.innerHTML = `Subiendo foto ${i + 1} de ${inputFotos.length}...`;
-        
-        const base64 = await convertirBase64(foto);
-        const oficialLimpio = datosOficial.replace(/[^a-zA-Z0-9]/g, "_");
-        
-        const payload = {
-            departamental: selectorDept,
-            nombre: `${oficialLimpio}_${Date.now()}_${foto.name}`,
-            tipo: foto.type,
-            archivo: base64
-        };
+        divProgreso.innerHTML = `Procesando y subiendo foto ${i + 1} de ${inputFotos.length}...`;
         
         try {
-            await fetch(URL_GOOGLE, {
+            const base64Optimizado = await comprimirYConvertir(foto);
+            const oficialLimpio = datosOficial.replace(/[^a-zA-Z0-9]/g, "_");
+            
+            const payload = {
+                departamental: selectorDept,
+                nombre: `${oficialLimpio}_${Date.now()}_${foto.name.replace(/\.[^/.]+$/, "")}.jpg`,
+                tipo: "image/jpeg",
+                archivo: base64Optimizado
+            };
+            
+            const resp = await fetch(URL_GOOGLE, {
                 method: "POST",
                 body: JSON.stringify(payload)
             });
+            const resultado = await resp.json();
+            console.log("Respuesta servidor:", resultado);
         } catch (error) {
             console.error("Error enviando: " + foto.name, error);
         }
@@ -94,19 +97,49 @@ async function subirImagenes() {
     
     divProgreso.innerHTML = `¡Éxito! Se guardaron ${inputFotos.length} fotos en la carpeta de Jefatura ${selectorDept}.`;
     btn.disabled = false;
-    document.getElementById('fotos').value = ""; // Limpiar fotos
-    document.getElementById('oficial').value = ""; // Limpiar campo oficial
+    document.getElementById('fotos').value = "";
+    document.getElementById('oficial').value = "";
 }
 
-function convertirBase64(file) {
+// Función que redimensiona y convierte a JPG 1920x1080 calidad 70%
+function comprimirYConvertir(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1920;
+                const MAX_HEIGHT = 1080;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // calidad 70%
+                resolve(dataUrl);
+            };
+        };
         reader.onerror = error => reject(error);
     });
 }
 </script>
-
 </body>
 </html>
